@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KMB IC Checker Pro</title>
+<style>
+  :root {
+    --bg: #090d16;
+    --bg-soft: #111827;
+    --card: #1e293b;
+    --card-hover: #283548;
+    --primary: #38bdf8;
+    --primary-glow: rgba(56, 189, 248, 0.35);
+    --accent: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --gold: #fbbf24;
+    --tg: #229ED9;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: rgba(148, 163, 184, 0.18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); padding-bottom: 95px; overflow-x: hidden; }
+
+  /* TOAST NOTIFICATION */
+  .toast-box {
+    position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(30px);
+    background: rgba(15, 23, 42, 0.96); color: #fff; padding: 11px 18px;
+    border-radius: 30px; border: 1px solid var(--primary);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6); font-size: 0.84rem; font-weight: 700;
+    z-index: 700; opacity: 0; pointer-events: none; transition: all 0.25s ease;
+    text-align: center; max-width: 92%; white-space: nowrap;
+  }
+  .toast-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* TOP OTP SMS SIMULATION BANNER */
+  .otp-sms-banner {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-120%);
+    width: 92%; max-width: 390px; background: rgba(15, 23, 42, 0.98);
+    border: 1.5px solid var(--accent); border-radius: 16px; padding: 13px 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.75); z-index: 800;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .otp-sms-banner.show { transform: translateX(-50%) translateY(0); }
+
+  /* SIDE DRAWER MENU */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 285px;
+    background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+    box-shadow: 5px 0 25px rgba(0,0,0,0.7); z-index: 450;
+    transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column; padding: 24px 18px; overflow-y: auto;
+  }
+  .drawer.active { transform: translateX(0); }
+  .drawer-logo-box {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; padding: 18px 14px; text-align: center; margin-bottom: 22px;
+  }
+  .drawer-logo {
+    width: 65px; height: 65px; border-radius: 18px;
+    background: linear-gradient(135deg, #0284c7, #10b981);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.45rem; font-weight: 900; color: #fff; margin: 0 auto 10px auto;
+    box-shadow: 0 6px 20px var(--primary-glow);
+  }
+  .drawer-appname { font-size: 1.1rem; font-weight: 900; color: #fff; }
+  .drawer-version { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+  .drawer-section-title {
+    font-size: 0.7rem; font-weight: 800; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1.2px; margin: 12px 6px 8px 6px;
+  }
+  .drawer-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-radius: 12px; color: var(--text); font-size: 0.88rem; font-weight: 700;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 5px;
+    text-decoration: none; border: 1px solid transparent;
+  }
+  .drawer-item:active, .drawer-item:hover {
+    background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); color: var(--primary);
+  }
+  .drawer-item.danger:active { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+  /* AUTH SCREEN */
+  .auth-screen {
+    position: fixed; inset: 0; z-index: 300;
+    background: radial-gradient(circle at top, #1e293b 0%, #090d16 100%);
+    display: none; flex-direction: column; justify-content: center; align-items: center;
+    padding: 20px; overflow-y: auto;
+  }
+  .auth-screen.active { display: flex; }
+  .auth-card {
+    background: rgba(30, 41, 59, 0.92); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); border-radius: 24px;
+    width: 100%; max-width: 400px; padding: 24px 20px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.7);
+  }
+  .auth-logo {
+    width: 68px; height: 68px; border-radius: 20px;
+    background: linear-gradient(135deg, #0284c7, #10b981);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 900; color: #fff; margin: 0 auto 10px auto;
+    box-shadow: 0 8px 25px var(--primary-glow);
+  }
+  .auth-title { text-align: center; font-size: 1.32rem; font-weight: 800; color: var(--primary); margin-bottom: 3px; }
+  .auth-sub { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 18px; }
+  .auth-tabs {
+    display: grid; grid-template-columns: 1fr 1fr; background: var(--bg);
+    padding: 4px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border);
+  }
+  .auth-tab {
+    padding: 10px; text-align: center; font-size: 0.85rem; font-weight: 700;
+    color: var(--muted); border-radius: 10px; cursor: pointer; transition: 0.2s;
+  }
+  .auth-tab.active { background: var(--primary); color: #000; box-shadow: 0 2px 10px var(--primary-glow); }
+
+  .forgot-link-wrap {
+    text-align: right; margin-top: -4px; margin-bottom: 10px;
+  }
+  .forgot-link {
+    font-size: 0.76rem; color: var(--primary); font-weight: 700;
+    cursor: pointer; text-decoration: none;
+  }
+  .forgot-link:active { opacity: 0.7; }
+
+  .vpn-note {
+    margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
+    text-align: center; font-size: 0.73rem; color: var(--muted); line-height: 1.4;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(9, 13, 22, 0.94); backdrop-filter: blur(12px);
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+  }
+  .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 11px; gap: 8px;
+  }
+  .top-left { display: flex; align-items: center; gap: 9px; }
+  .menu-btn {
+    background: var(--card); border: 1px solid var(--border); color: #fff;
+    width: 36px; height: 36px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; font-size: 1.25rem; cursor: pointer;
+  }
+  .app-title {
+    font-size: 1.12rem; font-weight: 900;
+    background: linear-gradient(90deg, #38bdf8, #34d399);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .vip-badge-top {
+    font-size: 0.66rem; padding: 2px 7px; border-radius: 6px; font-weight: 800;
+    background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid var(--gold);
+    -webkit-text-fill-color: var(--gold);
+  }
+  .free-badge-top {
+    font-size: 0.66rem; padding: 2px 7px; border-radius: 6px; font-weight: 700;
+    background: rgba(148, 163, 184, 0.15); color: var(--muted); border: 1px solid var(--border);
+    -webkit-text-fill-color: var(--muted);
+  }
+  .top-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 11px; border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  }
+  .icon-btn.active { border-color: var(--warning); color: var(--warning); }
+  .icon-btn.vip-btn { border-color: rgba(251, 191, 36, 0.5); color: var(--gold); background: rgba(251, 191, 36, 0.08); }
+  .icon-btn.admin-btn { border-color: var(--gold); color: #000; background: var(--gold); display: none; }
+  #editModeBtn { display: none; }
+
+  /* SEARCH BOX */
+  .search-wrap { position: relative; }
+  .search-input {
+    width: 100%; padding: 13px 40px 13px 16px;
+    border-radius: 14px; border: 1.5px solid var(--border);
+    background: var(--bg-soft); color: var(--text); font-size: 0.96rem; outline: none;
+  }
+  .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+  .clear-btn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--card); border: none; color: var(--muted);
+    width: 24px; height: 24px; border-radius: 50%; font-size: 0.85rem; cursor: pointer; display: none;
+  }
+
+  /* QUICK BAR */
+  .quick-bar { margin: 11px 14px 6px 14px; }
+  .quick-card-full {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(16, 185, 129, 0.12));
+    border: 1.5px solid rgba(251, 191, 36, 0.45); border-radius: 14px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 0.92rem; font-weight: 800; color: #fde047; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.12s;
+  }
+  .quick-card-full:active { transform: scale(0.98); }
+
+  /* CONTACT BANNER */
+  .contact-banner {
+    margin: 8px 14px 4px 14px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(16, 185, 129, 0.1));
+    border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 14px;
+    font-size: 0.83rem; line-height: 1.55; text-align: center;
+  }
+  .contact-title { color: #fde047; font-weight: 800; margin-bottom: 5px; font-size: 0.85rem; }
+  .contact-phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-weight: 700; }
+  .contact-phones a {
+    color: var(--text); text-decoration: none;
+    background: rgba(9, 13, 22, 0.85); padding: 4px 10px;
+    border-radius: 8px; border: 1px solid var(--border); font-size: 0.8rem;
+  }
+
+  /* GROUP CHIPS */
+  .group-bar {
+    display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px;
+    scrollbar-width: none; border-bottom: 1px solid var(--border);
+  }
+  .group-bar::-webkit-scrollbar { display: none; }
+  .chip {
+    white-space: nowrap; padding: 7px 14px; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: 0.15s;
+  }
+  .chip.active { background: var(--primary); color: #000; font-weight: 800; border-color: var(--primary); box-shadow: 0 2px 10px var(--primary-glow); }
+
+  .stats-bar {
+    padding: 8px 16px; font-size: 0.78rem; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* IC LIST */
+  .list-container { padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .ic-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 13px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: transform 0.12s, background 0.15s;
+  }
+  .ic-card:active { background: var(--card-hover); transform: scale(0.99); }
+  .ic-info { flex: 1; cursor: pointer; }
+  .ic-part { font-size: 1.05rem; font-weight: 800; color: #fff; letter-spacing: 0.3px; margin-bottom: 6px; }
+  .ic-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .badge { font-size: 0.73rem; padding: 3px 8px; border-radius: 7px; font-weight: 700; }
+  .badge-group { background: rgba(56, 189, 248, 0.14); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }
+  .badge-cap { background: rgba(16, 185, 129, 0.14); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge-note { background: rgba(245, 158, 11, 0.14); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+  .card-actions { display: flex; gap: 6px; margin-left: 10px; }
+  .btn-sm {
+    padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+  .btn-edit { border-color: var(--primary); color: var(--primary); }
+  .btn-del { border-color: var(--danger); color: var(--danger); }
+
+  /* FAB (Admin Only) */
+  .fab {
+    position: fixed; bottom: 18px; right: 18px; z-index: 40;
+    background: linear-gradient(135deg, #38bdf8, #0284c7); color: #000; font-weight: 800;
+    border: none; border-radius: 30px; padding: 13px 20px;
+    font-size: 0.92rem; box-shadow: 0 6px 20px var(--primary-glow);
+    cursor: pointer; display: none; align-items: center; gap: 6px;
+  }
+
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(6px);
+    z-index: 100; display: none; justify-content: center; align-items: center; padding: 14px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 22px; width: 100%; max-width: 450px; max-height: 90vh;
+    overflow-y: auto; padding: 18px; box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--primary); }
+  .close-modal {
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--muted);
+    width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; cursor: pointer;
+  }
+
+  /* HERO IC DETAIL */
+  .hero-ic-box {
+    background: linear-gradient(145deg, #090d16, #111827); border: 2px solid var(--primary);
+    border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 16px;
+  }
+  .hero-ic-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+  .hero-ic-name {
+    font-size: 1.5rem; font-weight: 900; color: #fde047;
+    word-break: break-all; line-height: 1.3; margin-bottom: 10px;
+  }
+  .copy-ic-btn {
+    background: rgba(56, 189, 248, 0.15); border: 1px solid var(--primary); color: var(--primary);
+    padding: 5px 12px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; cursor: pointer; margin-bottom: 14px;
+  }
+  .hero-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
+  .hero-info-item { background: var(--card); border: 1px solid var(--border); padding: 9px 11px; border-radius: 10px; }
+  .hero-info-item.full { grid-column: span 2; }
+  .info-k { font-size: 0.72rem; color: var(--muted); margin-bottom: 2px; }
+  .info-v { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+
+  .compat-list-title { font-size: 0.88rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+  .compat-scroll { max-height: 34vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+
+  /* PROFILE & USER ID */
+  .profile-box {
+    background: linear-gradient(135deg, #090d16, #111827); border: 1px solid var(--border);
+    border-radius: 16px; padding: 15px; margin-bottom: 14px;
+  }
+  .profile-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .avatar-circle {
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem; font-weight: 900; color: #000; flex-shrink: 0;
+  }
+  .userid-banner {
+    background: rgba(56, 189, 248, 0.1); border: 1px dashed var(--primary);
+    border-radius: 12px; padding: 10px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .userid-code { font-size: 1.1rem; font-weight: 900; color: #fde047; letter-spacing: 0.8px; }
+
+  .vip-plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .vip-plan-card {
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 12px; text-align: center;
+  }
+  .vip-plan-card.popular { border-color: var(--gold); background: rgba(251, 191, 36, 0.08); }
+  .plan-price { font-size: 1.15rem; font-weight: 900; color: var(--gold); margin: 4px 0; }
+
+  .vip-lock-box {
+    background: rgba(239, 68, 68, 0.07);
+    border: 1.5px dashed rgba(239, 68, 68, 0.45);
+    border-radius: 16px; padding: 18px 14px; text-align: center; margin-bottom: 12px;
+  }
+
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+  .form-control {
+    width: 100%; padding: 11px 13px; border-radius: 11px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.94rem; outline: none;
+  }
+  .form-control:focus { border-color: var(--primary); }
+  .btn-block {
+    width: 100%; padding: 13px; border-radius: 12px; border: none;
+    font-weight: 800; font-size: 0.93rem; cursor: pointer; margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none;
+  }
+  .btn-block:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #000; }
+  .btn-tg { background: linear-gradient(135deg, #2AABEE, #229ED9); color: #fff; box-shadow: 0 4px 15px rgba(34, 158, 217, 0.35); }
+  .btn-gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+  /* ADMIN GROUP PRICE CARD (ဘောင်မကျော်အောင် သပ်ရပ်စွာ ပြင်ဆင်ထားသော ဒီဇိုင်း) */
+  .admin-group-row {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; margin-bottom: 8px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .admin-group-top {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .admin-group-name { font-weight: 800; font-size: 0.88rem; color: #38bdf8; }
+  .admin-group-controls {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+  }
+  .admin-price-input {
+    flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: #fde047; font-weight: 800; font-size: 0.86rem; outline: none;
+  }
+  .admin-price-input:focus { border-color: var(--primary); }
+  .admin-save-btn {
+    padding: 8px 11px; border-radius: 8px; border: none;
+    background: var(--accent); color: #000; font-weight: 800; font-size: 0.78rem; cursor: pointer; white-space: nowrap;
+  }
+  .admin-del-btn {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.12); color: var(--danger); font-weight: 800; font-size: 0.78rem; cursor: pointer;
+  }
+
+  .setting-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="toastBox" class="toast-box"></div>
+
+<!-- OTP SMS NOTIFICATION BANNER -->
+<div id="otpSmsBanner" class="otp-sms-banner">
+  <div>
+    <div style="font-size:0.72rem; color:var(--accent); font-weight:800;">💬 KMB SMS OTP Code</div>
+    <div style="font-size:0.88rem; color:#fff; margin-top:2px;">သင့် OTP ကုဒ်မှာ <b id="otpBannerCode" style="color:#fde047; font-size:1.05rem; letter-spacing:1px;">000000</b> ဖြစ်ပါသည်</div>
+  </div>
+  <button class="btn-sm btn-edit" onclick="fillOtpAuto()">Auto ထည့်မည်</button>
+</div>
+
+<!-- 1. SIDE DRAWER MENU -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="sideDrawer">
+  <div class="drawer-logo-box">
+    <div class="drawer-logo">KMB</div>
+    <div class="drawer-appname">KMB IC Checker Pro</div>
+    <div class="drawer-version">Version 1.7.0 • Live Server</div>
+  </div>
+
+  <div class="drawer-section-title">QUICK ACTIONS</div>
+  <div class="drawer-item" onclick="closeDrawer()">
+    <span>🏠</span> Home (ပင်မစာမျက်နှာ)
+  </div>
+  <div class="drawer-item" onclick="closeDrawer(); openBoardPriceModal();">
+    <span>💹</span> စက်ပြားပေါက်ဈေးများ
+  </div>
+  <div class="drawer-item" onclick="closeDrawer(); openAccountModal();">
+    <span>👤</span> သုံးစွဲသူ အကောင့် & VIP
+  </div>
+
+  <div class="drawer-section-title">UTILITY & SETTINGS</div>
+  <div class="drawer-item" onclick="closeDrawer(); openModal('settingsModal');">
+    <span>⚙️</span> Settings & စီမံရန်
+  </div>
+  <div class="drawer-item" onclick="contactTelegramForVip()">
+    <span>✈️</span> Telegram (@ZoD1910)
+  </div>
+  <div class="drawer-item" onclick="shareApp()">
+    <span>🔗</span> Share App
+  </div>
+  <div class="drawer-item danger" onclick="handleLogout()">
+    <span>🚪</span> Exit App (အကောင့်မှထွက်မည်)
+  </div>
+</div>
+
+<!-- 2. AUTH SCREEN (LOGIN / REGISTER / FORGOT PASSWORD) -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">KMB</div>
+    <div class="auth-title">KMB IC Checker Pro</div>
+    <div class="auth-sub">1 Phone = 1 User ID • 1 Day Free VIP</div>
+
+    <div class="auth-tabs" id="authTabsBar">
+      <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">အကောင့်ဝင်ရန်</div>
+      <div class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">အကောင့်သစ်ဖွင့်ရန်</div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>📱 ဖုန်းနံပါတ်</label>
+        <input type="tel" id="loginPhone" class="form-control" placeholder="ဥပမာ - 09xxxxxxxxx">
+      </div>
+      <div class="form-group" style="margin-bottom:6px;">
+        <label>🔑 စကားဝှက် (Password)</label>
+        <input type="password" id="loginPass" class="form-control" placeholder="စကားဝှက် ရိုက်ထည့်ပါ">
+      </div>
+      <!-- Forgot Password చిన్న Link -->
+      <div class="forgot-link-wrap">
+        <span class="forgot-link" onclick="openForgotForm()">Forgot password? (စကားဝှက်မေ့နေပါသလား)</span>
+      </div>
+      <button class="btn-block btn-primary" id="loginBtn" onclick="handleLogin()">🚀 အကောင့်ဝင်မည် (Login)</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" style="display:none;">
+      <div class="form-group">
+        <label>👤 အမည် *</label>
+        <input type="text" id="regName" class="form-control" placeholder="သင့်အမည် ရိုက်ထည့်ပါ">
+      </div>
+      <div class="form-group">
+        <label>📱 ဖုန်းနံပါတ် (User ID ရယူရန်) *</label>
+        <input type="tel" id="regPhone" class="form-control" placeholder="09xxxxxxxxx">
+      </div>
+      <div class="form-group">
+        <label>🏪 ဆိုင်အမည် / မြို့နယ်</label>
+        <input type="text" id="regShop" class="form-control" placeholder="ဥပမာ - KMB Mobile (ရန်ကုန်)">
+      </div>
+      <div class="form-group">
+        <label>🔑 စကားဝှက် သတ်မှတ်ရန် *</label>
+        <input type="password" id="regPass" class="form-control" placeholder="အနည်းဆုံး ၄ လုံး">
+      </div>
+      <div style="font-size:0.75rem; color:var(--gold); margin-bottom:8px; text-align:center;">
+        🎁 အကောင့်သစ်ဖွင့်ပါက ၁ ရက်စာ (24 Hours) VIP အခမဲ့ ရရှိပါမည်!
+      </div>
+      <button class="btn-block btn-accent" id="regBtn" onclick="handleRegister()">✨ အကောင့်သစ်ဖွင့်မည် (Sign Up)</button>
+    </div>
+
+    <!-- Forgot Password OTP Flow -->
+    <div id="forgotForm" style="display:none;">
+      <div style="font-size:0.9rem; font-weight:800; color:var(--gold); margin-bottom:10px; text-align:center;">
+        🔐 စကားဝှက်အသစ် ပြန်လည်သတ်မှတ်ရန်
+      </div>
+
+      <!-- Step 1: Request OTP by Phone -->
+      <div id="forgotStep1">
+        <div class="form-group">
+          <label>📱 အကောင့်ဖွင့်ထားသော ဖုန်းနံပါတ်</label>
+          <input type="tel" id="forgotPhone" class="form-control" placeholder="09xxxxxxxxx">
+        </div>
+        <button class="btn-block btn-primary" id="sendOtpBtn" onclick="sendForgotOtp()">📲 OTP Code ရယူမည်</button>
+      </div>
+
+      <!-- Step 2: Verify OTP -->
+      <div id="forgotStep2" style="display:none;">
+        <div class="form-group">
+          <label>💬 ဖုန်းသို့ကျလာသော ဂဏန်း (၆) လုံး OTP Code</label>
+          <input type="number" id="forgotOtpInput" class="form-control" placeholder="ဥပမာ - 123456">
+        </div>
+        <button class="btn-block btn-accent" onclick="verifyForgotOtp()">✅ OTP Code အတည်ပြုမည်</button>
+      </div>
+
+      <!-- Step 3: Enter New Password Twice -->
+      <div id="forgotStep3" style="display:none;">
+        <div class="form-group">
+          <label>🔑 စကားဝှက်အသစ် (New Password)</label>
+          <input type="password" id="forgotNewPass1" class="form-control" placeholder="စကားဝှက်အသစ် ရိုက်ပါ">
+        </div>
+        <div class="form-group">
+          <label>🔑 စကားဝှက်အသစ် နောက်တစ်ကြိမ် ရိုက်ပါ</label>
+          <input type="password" id="forgotNewPass2" class="form-control" placeholder="စကားဝှက်အသစ် ထပ်မံရိုက်ပါ">
+        </div>
+        <button class="btn-block btn-gold" id="saveNewPassBtn" onclick="saveResetPassword()">💾 စကားဝှက်အသစ် သိမ်းဆည်းမည်</button>
+      </div>
+
+      <button class="btn-block btn-secondary" onclick="closeForgotForm()" style="margin-top:10px; font-size:0.82rem;">
+        ← အကောင့်ဝင်သည့်နေရာသို့ ပြန်သွားမည်
+      </button>
+    </div>
+
+    <!-- Small VPN Notice at the bottom of Login UI -->
+    <div class="vpn-note">
+      💡 မှတ်ချက် - Login ဝင်မရပါက <b>VPN ဖွင့်ပြီး</b> ပြန်ဝင်ပေးပါရန်
+    </div>
+  </div>
+</div>
+
+<!-- 3. MAIN APP HEADER -->
+<header>
+  <div class="top-bar">
+    <div class="top-left">
+      <button class="menu-btn" onclick="openDrawer()">☰</button>
+      <div class="app-title">
+        🔍 KMB IC Pro
+        <span id="topStatusBadge" class="free-badge-top">FREE</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn admin-btn" id="topAdminBtn" onclick="openAdminModal()">👑 Admin</button>
+      <button class="icon-btn vip-btn" onclick="openAccountModal()">👤 အကောင့်</button>
+      <button class="icon-btn" id="editModeBtn" onclick="toggleEditMode()">✏️ Edit</button>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" class="search-input" placeholder="IC နံပါတ် ရိုက်ရှာပါ (ဥပမာ - B614, JZ369, KLUDG)..." oninput="handleSearch()">
+    <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+  </div>
+</header>
+
+<!-- Quick Bar -->
+<div class="quick-bar">
+  <div class="quick-card-full" onclick="openBoardPriceModal()">
+    💹 စက်ပြားပေါက်ဈေးများ ကြည့်ရှုရန်
+  </div>
+</div>
+
+<!-- Contact Banner -->
+<div class="contact-banner">
+  <div class="contact-title">📢 ဖုန်းအဟောင်းနဲ့ စက်ပြားများရောင်းချလိုပါက</div>
+  <div class="contact-phones">
+    <a href="tel:09454500251">📞 ဦးရဲ - 09454500251</a>
+    <a href="tel:09885478869">📞 ကောင်းမြတ်ဗိုလ် - 09885478869</a>
+  </div>
+</div>
+
+<div class="group-bar" id="groupBar"></div>
+
+<div class="stats-bar">
+  <span id="resultCount">စုစုပေါင်း IC: 0</span>
+  <span id="syncStatusText" style="font-size:0.75rem;">⚡ ID: -</span>
+</div>
+
+<div class="list-container" id="icList"></div>
+
+<!-- Admin Only Add IC Button -->
+<button class="fab" id="fabAddBtn" onclick="openAddModal()">＋ IC အသစ်ထည့်ရန်</button>
+
+<!-- 4. BOARD PRICE MODAL -->
+<div class="modal-overlay" id="boardPriceModal" onclick="if(event.target===this) closeModal('boardPriceModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💹 စက်ပြားပေါက်ဈေးများ (Live Server)</div>
+      <button class="close-modal" onclick="closeModal('boardPriceModal')">✕</button>
+    </div>
+
+    <!-- VIP Expired Locked Section -->
+    <div id="vipLockedSection" style="display:none;">
+      <div class="vip-lock-box">
+        <div style="font-size:2.2rem; margin-bottom:6px;">🔒</div>
+        <div style="font-weight:900; color:#fde047; font-size:1.05rem; margin-bottom:6px;">
+          VIP သက်တမ်း ကုန်ဆုံးသွားပါပြီ
+        </div>
+        <div style="font-size:0.83rem; color:var(--text); line-height:1.5; margin-bottom:12px;">
+          စက်ပြားပေါက်ဈေးများကို ဆက်လက်ကြည့်ရှုရန် သင့် <b>User ID</b> ကို Telegram သို့ ပို့ပေးပြီး VIP ဝယ်ယူနိုင်ပါသည်။
+        </div>
+
+        <div class="userid-banner" style="margin-bottom:12px; background:var(--bg);">
+          <div style="text-align:left;">
+            <div style="font-size:0.7rem; color:var(--muted);">သင့် User ID</div>
+            <div class="userid-code" id="lockModalUserId">KMB-000000</div>
+          </div>
+          <button class="btn-sm btn-edit" onclick="copyUserId()">📋 Copy ID</button>
+        </div>
+
+        <button class="btn-block btn-tg" onclick="contactTelegramForVip()">
+          ✈️ Telegram (@ZoD1910) သို့ VIP ဝယ်ယူရန် ဆက်သွယ်မည်
+        </button>
+
+        <button class="btn-block btn-secondary" onclick="refreshUserVipFromServer(true)" style="margin-top:8px; font-size:0.82rem;">
+          🔄 VIP ဖွင့်ပြီးပါက ဤနေရာကို နှိပ်ပါ (Refresh)
+        </button>
+      </div>
+    </div>
+
+    <!-- VIP Unlocked Price List -->
+    <div id="boardPriceUnlockedSection" style="display:none;">
+      <div style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); border-radius:11px; padding:9px 12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
+        <span id="priceModalVipTimer" style="color:var(--accent); font-weight:800;">👑 VIP Active</span>
+        <span style="color:var(--primary); cursor:pointer; font-weight:800;" onclick="syncFromServer(true)">🔄 Sync Server</span>
+      </div>
+
+      <div id="boardPriceList" style="display:flex; flex-direction:column; gap:8px; max-height:55vh; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. USER ACCOUNT & TELEGRAM VIP MODAL -->
+<div class="modal-overlay" id="accountModal" onclick="if(event.target===this) closeModal('accountModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👤 သုံးစွဲသူ အကောင့် နှင့် VIP အဆင့်</div>
+      <button class="close-modal" onclick="closeModal('accountModal')">✕</button>
+    </div>
+
+    <div class="profile-box">
+      <div class="profile-top">
+        <div class="avatar-circle" id="accAvatar">U</div>
+        <div style="flex:1;">
+          <div style="font-size:1.05rem; font-weight:800;" id="accName">-</div>
+          <div style="font-size:0.8rem; color:var(--muted);" id="accPhone">-</div>
+          <div style="margin-top:4px; font-size:0.8rem; font-weight:800;" id="accPlanText">Free Member</div>
+        </div>
+      </div>
+
+      <div class="userid-banner">
+        <div>
+          <div style="font-size:0.72rem; color:var(--muted);">🆔 သင့်ကိုယ်ပိုင် User ID (VIP ဖွင့်ရန်)</div>
+          <div class="userid-code" id="accUserIdDisplay">KMB-000000</div>
+        </div>
+        <button class="btn-sm btn-edit" onclick="copyUserId()">📋 Copy ကူးမည်</button>
+      </div>
+    </div>
+
+    <div style="background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:15px; margin-bottom:14px;">
+      <div style="font-weight:800; color:var(--gold); font-size:0.96rem; margin-bottom:5px;">👑 Premium (VIP) သက်တမ်းတိုးရန်</div>
+      <div style="font-size:0.79rem; color:var(--muted); line-height:1.45;">
+        သင့် <b>User ID</b> ကို Telegram သို့ ပို့ပေးရုံဖြင့် Server မှ တိုက်ရိုက် VIP ဖွင့်ပေးပါမည်။ စက်ပြားပေါက်ဈေးများနှင့် IC စျေးနှုန်းအားလုံး Real-time ပွင့်သွားပါမည်။
+      </div>
+
+      <div class="vip-plan-grid">
+        <div class="vip-plan-card">
+          <div style="font-size:0.78rem; color:var(--muted);">၁ လစာ VIP</div>
+          <div class="plan-price">၁,၀၀၀ ကျပ်</div>
+          <div style="font-size:0.7rem; color:var(--accent);">၃၀ ရက် အပြည့်</div>
+        </div>
+        <div class="vip-plan-card popular">
+          <div style="font-size:0.78rem; color:var(--gold); font-weight:800;">⭐ ၁ နှစ်စာ VIP</div>
+          <div class="plan-price">၁၂,၀၀၀ ကျပ်</div>
+          <div style="font-size:0.7rem; color:var(--accent);">၃၆၅ ရက် အပြည့်</div>
+        </div>
+      </div>
+
+      <button class="btn-block btn-tg" onclick="contactTelegramForVip()">
+        ✈️ Telegram (t.me/ZoD1910) သို့ VIP ဝယ်ယူရန် ဆက်သွယ်မည်
+      </button>
+
+      <button class="btn-block btn-gold" onclick="refreshUserVipFromServer(true)" style="margin-top:8px;">
+        🔄 Server မှ VIP သက်တမ်း စစ်ဆေးမည် (Refresh)
+      </button>
+    </div>
+
+    <button class="btn-block btn-danger" onclick="handleLogout()">🚪 အကောင့်မှ ထွက်မည် (Logout)</button>
+  </div>
+</div>
+
+<!-- 6. ADMIN MODE: DYNAMIC GROUP PRICE EDITOR (အသစ်ထည့်/ပြင်/ဖျက် + Auto Group Sync) -->
+<div class="modal-overlay" id="adminModal" onclick="if(event.target===this) closeModal('adminModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--gold);">👑 KMB Admin: Server စီမံရန်</div>
+      <button class="close-modal" onclick="closeModal('adminModal')">✕</button>
+    </div>
+
+    <!-- 1. VIP Activation By User ID or Phone -->
+    <div style="background:var(--bg); border:1px solid var(--gold); border-radius:14px; padding:12px; margin-bottom:14px;">
+      <div style="font-size:0.86rem; font-weight:800; color:var(--gold); margin-bottom:6px;">
+        🆔 User ID ဖြင့် VIP ဖွင့်ပေးရန်
+      </div>
+      <input type="text" id="adminTargetUserInput" class="form-control" placeholder="ဥပမာ - KMB-123456 သို့မဟုတ် 09xxxxxxxxx" style="margin-bottom:8px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <button class="btn-block btn-accent" style="margin:0; padding:10px; font-size:0.82rem;" onclick="adminSetUserVip(30)">+ ၁ လ VIP</button>
+        <button class="btn-block btn-gold" style="margin:0; padding:10px; font-size:0.82rem;" onclick="adminSetUserVip(365)">+ ၁ နှစ် VIP</button>
+      </div>
+    </div>
+
+    <!-- 2. Add New Custom Group & Price -->
+    <div style="background:var(--bg); border:1px solid rgba(56,189,248,0.35); border-radius:14px; padding:12px; margin-bottom:14px;">
+      <div style="font-size:0.84rem; font-weight:800; color:var(--primary); margin-bottom:6px;">
+        ➕ Group အသစ်နှင့် ပေါက်ဈေး အသစ်ထည့်ရန်
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
+        <input type="text" id="newGroupNameInput" class="form-control" placeholder="Group အမည်သစ်" style="padding:9px 10px; font-size:0.85rem;">
+        <input type="text" id="newGroupPriceInput" class="form-control" placeholder="ဈေးနှုန်း (ဥပမာ 90000 Ks)" style="padding:9px 10px; font-size:0.85rem;">
+      </div>
+      <button class="btn-block btn-primary" style="margin-top:4px; padding:10px; font-size:0.84rem;" onclick="adminAddNewGroupPrice()">
+        ☁️ Group အသစ် Server ပေါ်ထည့်မည်
+      </button>
+    </div>
+
+    <!-- 3. Existing & Auto-Detected Groups Price List -->
+    <div style="background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:12px;">
+      <div style="font-size:0.86rem; font-weight:800; color:var(--primary); margin-bottom:4px;">
+        📊 Group စက်ပြားပေါက်ဈေးများ ပြင်ရန် / ဖျက်ရန်
+      </div>
+      <div style="font-size:0.74rem; color:var(--muted); margin-bottom:10px;">
+        အောက်ပါ IC စာရင်းထဲတွင် Group အသစ်တိုးလာပါက ဤနေရာတွင် အလိုအလျောက် လာပေါ်ပါမည်။
+      </div>
+
+      <div id="adminGroupPriceContainer" style="max-height:42vh; overflow-y:auto; display:flex; flex-direction:column;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. IC DETAIL POPUP MODAL -->
+<div class="modal-overlay" id="compatModal" onclick="if(event.target===this) closeModal('compatModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📌 IC အချက်အလက် အသေးစိတ်</div>
+      <button class="close-modal" onclick="closeModal('compatModal')">✕</button>
+    </div>
+
+    <div class="hero-ic-box">
+      <div class="hero-ic-label">IC PART NUMBER</div>
+      <div class="hero-ic-name" id="detailPartName">-</div>
+      <button class="copy-ic-btn" onclick="copyCurrentIcPart()">📋 IC နံပါတ် Copy ကူးရန်</button>
+      <div class="hero-info-grid">
+        <div class="hero-info-item">
+          <div class="info-k">📂 Group အမည်</div>
+          <div class="info-v" id="detailGroup" style="color:var(--primary);">-</div>
+        </div>
+        <div class="hero-info-item">
+          <div class="info-k">💾 Capacity / GB</div>
+          <div class="info-v" id="detailCap" style="color:var(--accent);">-</div>
+        </div>
+        <!-- Group စက်ပြားပေါက်ဈေး (VIP သာ မြင်ရမည်) -->
+        <div class="hero-info-item full">
+          <div class="info-k">💹 သက်ဆိုင်ရာ စက်ပြားပေါက်ဈေး (ခန့်မှန်း)</div>
+          <div class="info-v" id="detailGroupPrice" style="color:var(--gold);">-</div>
+        </div>
+        <div class="hero-info-item full" id="detailNoteBox" style="display:none;">
+          <div class="info-k">📝 မှတ်ချက် (Remark / Info)</div>
+          <div class="info-v" id="detailNote" style="color:var(--warning);">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="compat-list-title">
+      <span id="compatTitle">🔄 Group တူ အစားထိုးနိုင်သော IC များ</span>
+    </div>
+    <div class="compat-scroll" id="compatBody"></div>
+  </div>
+</div>
+
+<!-- 8. ADD / EDIT IC MODAL (Admin Only) -->
+<div class="modal-overlay" id="icModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="icModalTitle">IC အသစ်ထည့်ရန်</div>
+      <button class="close-modal" onclick="closeModal('icModal')">✕</button>
+    </div>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label>IC Part Number *</label>
+      <input type="text" id="partInput" class="form-control" placeholder="ဥပမာ - KMRH60014A B614">
+    </div>
+    <div class="form-group">
+      <label>Group အမည် * (အသစ်ရိုက်ထည့်လျှင် ပေါက်ဈေးစာရင်းထဲ အလိုလိုပေါ်မည်)</label>
+      <input type="text" id="groupInput" list="groupSuggestions" class="form-control" placeholder="ဥပမာ - 515 B, 515(C) သို့မဟုတ် Group အသစ်">
+      <datalist id="groupSuggestions"></datalist>
+    </div>
+    <div class="form-group">
+      <label>Capacity / GB ပမာဏ</label>
+      <input type="text" id="capInput" class="form-control" placeholder="ဥပမာ - 32GB, 64GB, 128GB, 256GB">
+    </div>
+    <div class="form-group">
+      <label>မှတ်ချက် (Remark / Info)</label>
+      <input type="text" id="noteInput" class="form-control" placeholder="ဥပမာ - ic အသေး / ic အကြီး">
+    </div>
+    <button class="btn-block btn-primary" onclick="saveIC()">☁️ Server ပေါ်သို့ သိမ်းဆည်းမည်</button>
+  </div>
+</div>
+
+<!-- 9. SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Settings & စီမံရန်</div>
+      <button class="close-modal" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    
+    <div class="setting-item" id="adminEditSettingItem" style="display:none;">
+      <div>
+        <div style="font-weight:700; color:var(--gold);">👑 Admin: IC Edit / Delete ခလုတ်ဖော်ရန်</div>
+        <div style="font-size:0.78rem; color:var(--muted);">IC အသစ်ပြင်ပြီး Server ပေါ်သို့ တိုက်ရိုက်တင်ရန်</div>
+      </div>
+      <input type="checkbox" id="editToggleCheck" onchange="toggleEditMode()" style="width:20px; height:20px;">
+    </div>
+
+    <div style="margin-top:14px;">
+      <div style="font-size:0.83rem; color:var(--muted); margin-bottom:6px;">IC စာရင်း Backup ထုတ်ရန် / ပြန်သွင်းရန်</div>
+      <button class="btn-block btn-secondary" onclick="exportData()">📤 Backup ဖိုင်ထုတ်မည် (.json)</button>
+      <label class="btn-block btn-secondary" id="adminImportBtn" style="display:none; margin-top:8px;">
+        📥 Backup ဖိုင်ပြန်သွင်းမည် (Admin)
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+      </label>
+    </div>
+
+    <div id="adminResetBox" style="display:none; margin-top:18px; padding-top:12px; border-top:1px solid var(--border);">
+      <button class="btn-block btn-danger" onclick="resetDefaultData()">🔄 မူလ IC (၂၇၉) လုံးအတိုင်း ပြန်ထားမည်</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// FIREBASE REALTIME DATABASE URL (HARDCODED IN JS)
+// ============================================================================
+const SERVER_URL = "https://kmb-ic-checker-default-rtdb.asia-southeast1.firebasedatabase.app";
+const TELEGRAM_VIP_URL = "https://t.me/ZoD1910";
+
+// BASE GROUPS LIST
+const DEFAULT_GROUPS = [
+  "515 (A)",
+  "515 B",
+  "515(C)",
+  "705 (A)",
+  "705 (B)",
+  "705 (C)",
+  "Mi - 32GB",
+  "Mi - 64GB",
+  "Mi - 128GB",
+  "Mi - 256GB",
+  "256 (A)",
+  "256 (B)",
+  "B 214 Group",
+  "B 305 Group",
+  "TQ 17 Group",
+  "B 614 Group",
+  "B 515 Group"
+];
+
+// 279 IC FULL DATA
+const DEFAULT_ICS = [
+  // 515 B (22 လုံး)
+  { part: "KMRH60014A B614", group: "515 B", cap: "64GB", note: "" },
+  { part: "KMRH60014M B614", group: "515 B", cap: "64GB", note: "" },
+  { part: "KMRP60014M B614", group: "515 B", cap: "64GB", note: "" },
+  { part: "KM5P8001DM B424", group: "515 B", cap: "64GB", note: "" },
+  { part: "KM5H7001DM B424", group: "515 B", cap: "64GB", note: "" },
+  { part: "KM2H7001CM B518", group: "515 B", cap: "64GB", note: "" },
+  { part: "KMRC10014M B809", group: "515 B", cap: "64GB", note: "" },
+  { part: "KMRH60014M B809", group: "515 B", cap: "64GB", note: "" },
+  { part: "KM3P6001CM B517", group: "515 B", cap: "64GB", note: "" },
+  { part: "KM5C7001DM B622", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9TQ53ACLTMC", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9TQ52ACLTMC", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9HQ53ACPMMD", group: "515 B", cap: "64GB", note: "" },
+  { part: "HQ54AECMMD", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9HQ53AECMMD", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9HQ54ACPMAD", group: "515 B", cap: "64GB", note: "" },
+  { part: "H9AG965ANB (X100147A)", group: "515 B", cap: "64GB", note: "" },
+  { part: "JZ186", group: "515 B", cap: "64GB", note: "" },
+  { part: "JZ109", group: "515 B", cap: "64GB", note: "" },
+  { part: "JZ177", group: "515 B", cap: "64GB", note: "" },
+  { part: "JZ168", group: "515 B", cap: "64GB", note: "" },
+  { part: "JZ052", group: "515 B", cap: "64GB", note: "" },
+
+  // Mi - 256GB (16 လုံး)
+  { part: "KLUEG8U1EA-B0C1", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "KLUEG8UHDB-C2D1", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "KLUEG4RHHD-B0G1", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "KLUEG4RHGB-B0E1", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "KLUEG4R1DE-B0F1", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "SDINEDK4-256", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "M-AT14R113UF70691TRN", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "HN8T15DEHK(X075) 244Y", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "HN8T15DEHK(X075) 349Y", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ-369", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ-242", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ-348", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ-161", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ 449", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ 540", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+  { part: "JZ 566", group: "Mi - 256GB", cap: "256GB", note: "Mi Series" },
+
+  // Mi - 128GB (32 လုံး)
+  { part: "KLUDG2R1DE-B0F1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLMDG4UCTA-B041", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLMDG4UCTB-B041", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG8J1CB-B0B1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLMDG8JENB-B041", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "HN8T05DEHK", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "HN8T061ZGK (X012)", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "H28S8Q302CMR", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG4UHDB-B2E1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG4UHDC-B0E1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "SanDisk-CHINA-SDINBDA4-128G", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG4U1EA-B0C1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "H26T87001CMR", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "THGAF4T0N8LBAIR", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG4UHDB-B2D1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "THGAF8T0T43BAIR", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "HN8T05DEHK X073", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUCG8G1BD-E0B1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "SSE100GBCV100TBD", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDG8V1EE-B0C1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "YMUS8B2TE2A2C1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLMDG4UERM-B041", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "KLUDGAG1BD-E0B1", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "H26M88002AMR", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ156", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ159", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ144", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ341", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ369", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ064", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ459", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+  { part: "JZ496", group: "Mi - 128GB", cap: "128GB", note: "Mi Series" },
+
+  // Mi - 64GB (27 လုံး)
+  { part: "H26M74002HMR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "HN8G962EHK", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUDGAG1BD-B0B1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "YMEC7A2TB2A2C3", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "YMUS7B2TE1A2C1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "XBECC1A27A2TG1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "H28074301AMR", group: "Mi - 64GB", cap: "64GB", note: "H28U74301AMR / Mi Series" },
+  { part: "H28U72301CMR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "H28U74303AMR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "H28S7Q302BMR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG2UCTA-B041", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG2UCTB-B041", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG2KCTA-B041", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUCG2K1EA-B0C1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG4JENB-B041", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUCG4J1BB-B0B1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG2KETM-B041", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUCG4J1ED-B0C1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLMCG8GEND-B031", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUCG8G1BD-E0B1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "H26M78208CMR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "KLUCG4J1CB-B0B1", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "THGAF8G9T43BAIR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "THGAF4G9N4LBAIR", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "JZ160", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "JZ495", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+  { part: "JZ528", group: "Mi - 64GB", cap: "64GB", note: "Mi Series" },
+
+  // Mi - 32GB (13 လုံး)
+  { part: "H26M64208EMR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLMBG2JETD-B041", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLUBG4G1CE-B0B1", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLMBG4GEND-B031", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "THGBMFG8C2LBAIL", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "H26M64103EMR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "H26M62002JPR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLUBG4G1BD-E0B1", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLUBG4G1BD-B0B2", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "KLUBG4G1BD-B0B1", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "H2MU64122MAR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "H28U64222MMR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+  { part: "H28U62301AMR", group: "Mi - 32GB", cap: "32GB", note: "Mi Series" },
+
+  // 515(C) (64GB) (27 လုံး)
+  { part: "KMGP6001BM B514", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KMGP6001BA B514", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KM5H8001BM B424", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KMDP60018M B425", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KMWC10014M B812", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KMWC10017M B812", group: "515(C)", cap: "64GB", note: "" },
+  { part: "KMRC1000BM B809", group: "515(C)", cap: "64GB", note: "" },
+  { part: "H9TQ52ADFTAC", group: "515(C)", cap: "64GB", note: "" },
+  { part: "H9HP52ADPMMD", group: "515(C)", cap: "64GB", note: "" },
+  { part: "H9HQ52ADAMAD", group: "515(C)", cap: "64GB", note: "" },
+  { part: "H9HQ53ADAMAD", group: "515(C)", cap: "64GB", note: "" },
+  { part: "H9HP52AECMMD", group: "515(C)", cap: "64GB", note: "ic အကြီး" },
+  { part: "SDADA4DR-64G", group: "515(C)", cap: "64GB", note: "" },
+  { part: "SDADA4CR-64G", group: "515(C)", cap: "64GB", note: "" },
+  { part: "64EMCP32-4BTA29", group: "515(C)", cap: "64GB", note: "" },
+  { part: "E464M6CMSA", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ128", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ049", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ442", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ053", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ481", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ085", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ185", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ090", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ478", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ484", group: "515(C)", cap: "64GB", note: "" },
+  { part: "JZ255", group: "515(C)", cap: "64GB", note: "" },
+
+  // 515(A) (14 လုံး)
+  { part: "KM3H6001CM B515", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KM3H6001CA B515", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KM2P9001CM B518", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KMDH6001DM B422", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KMDH6001DA B422", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KM5P9001DM B424", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KMDP6001DB B425", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KMDP6001DA B425", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "KMDC6001DM B625", group: "515 (A)", cap: "64GB", note: "" },
+  { part: "H9HP52ACPMMD", group: "515 (A)", cap: "64GB", note: "ic အသေး" },
+  { part: "H9HP52ACPMAD", group: "515 (A)", cap: "64GB", note: "ic အသေး" },
+  { part: "H9HP53ACPMMD", group: "515 (A)", cap: "64GB", note: "ic အသေး" },
+  { part: "H9HP52AECMMD", group: "515 (A)", cap: "64GB", note: "ic အသေး" },
+  { part: "H9HP53AECMMD", group: "515 (A)", cap: "64GB", note: "ic အသေး" },
+
+  // 705 (A) (8 လုံး)
+  { part: "HQ 15 AF", group: "705 (A)", cap: "", note: "" },
+  { part: "HQ 16 AF", group: "705 (A)", cap: "", note: "" },
+  { part: "B.810(V700)", group: "705 (A)", cap: "", note: "" },
+  { part: "B.813(V800)", group: "705 (A)", cap: "", note: "" },
+  { part: "B.813(V900)", group: "705 (A)", cap: "", note: "" },
+  { part: "H9QTOGE", group: "705 (A)", cap: "", note: "" },
+  { part: "B.814(S900)", group: "705 (A)", cap: "", note: "" },
+  { part: "B.624(L900)", group: "705 (A)", cap: "", note: "" },
+
+  // 256 (A) (5 လုံး)
+  { part: "B.815(900)", group: "256 (A)", cap: "", note: "" },
+  { part: "B.830(900)", group: "256 (A)", cap: "", note: "" },
+  { part: "HQ21AF", group: "256 (A)", cap: "", note: "" },
+  { part: "HQ22AF", group: "256 (A)", cap: "", note: "" },
+  { part: "H9QT1G6", group: "256 (A)", cap: "", note: "" },
+
+  // 705 (B) (12 လုံး)
+  { part: "HP 15 AE", group: "705 (B)", cap: "", note: "" },
+  { part: "HP 16 AE", group: "705 (B)", cap: "", note: "" },
+  { part: "B.705", group: "705 (B)", cap: "", note: "" },
+  { part: "B.706", group: "705 (B)", cap: "", note: "" },
+  { part: "B.707", group: "705 (B)", cap: "", note: "" },
+  { part: "B.708", group: "705 (B)", cap: "", note: "" },
+  { part: "B.616 (V500)", group: "705 (B)", cap: "", note: "" },
+  { part: "B.812(V500)", group: "705 (B)", cap: "", note: "" },
+  { part: "B.518(L900)", group: "705 (B)", cap: "", note: "" },
+  { part: "JZ.152", group: "705 (B)", cap: "", note: "" },
+  { part: "JZ.351", group: "705 (B)", cap: "", note: "" },
+  { part: "JZ.387", group: "705 (B)", cap: "", note: "" },
+
+  // 256 (B) (4 လုံး)
+  { part: "B. 801", group: "256 (B)", cap: "", note: "" },
+  { part: "HQ 21 AE", group: "256 (B)", cap: "", note: "" },
+  { part: "HQ 22 AE", group: "256 (B)", cap: "", note: "" },
+  { part: "JZ 397", group: "256 (B)", cap: "", note: "" },
+
+  // B 214 Group (19 လုံး)
+  { part: "B-214", group: "B 214 Group", cap: "", note: "" },
+  { part: "B314(7X)", group: "B 214 Group", cap: "", note: "" },
+  { part: "B316(7200)", group: "B 214 Group", cap: "", note: "" },
+  { part: "B-315", group: "B 214 Group", cap: "", note: "" },
+  { part: "B-410", group: "B 214 Group", cap: "", note: "" },
+  { part: "B-318(N100)", group: "B 214 Group", cap: "", note: "" },
+  { part: "B-509", group: "B 214 Group", cap: "", note: "" },
+  { part: "B-606", group: "B 214 Group", cap: "", note: "" },
+  { part: "TP(64/65)", group: "B 214 Group", cap: "", note: "" },
+  { part: "TQ(64/65)", group: "B 214 Group", cap: "", note: "" },
+  { part: "221661", group: "B 214 Group", cap: "", note: "" },
+  { part: "221664", group: "B 214 Group", cap: "", note: "" },
+  { part: "221651", group: "B 214 Group", cap: "", note: "" },
+  { part: "JW-A60", group: "B 214 Group", cap: "", note: "" },
+  { part: "JY-974", group: "B 214 Group", cap: "", note: "" },
+  { part: "08--08(3BD527)", group: "B 214 Group", cap: "", note: "" },
+  { part: "08--08(3CV100)", group: "B 214 Group", cap: "", note: "" },
+  { part: "28k-8GB", group: "B 214 Group", cap: "8GB", note: "" },
+  { part: "B-511", group: "B 214 Group", cap: "", note: "" },
+
+  // B 305 Group (9 လုံး)
+  { part: "B-305", group: "B 305 Group", cap: "", note: "" },
+  { part: "B-414", group: "B 305 Group", cap: "", note: "" },
+  { part: "B-417", group: "B 305 Group", cap: "", note: "" },
+  { part: "B-418", group: "B 305 Group", cap: "", note: "" },
+  { part: "B-214(E-100)", group: "B 305 Group", cap: "", note: "" },
+  { part: "B-214(E-600)", group: "B 305 Group", cap: "", note: "" },
+  { part: "16--08(3DT527)", group: "B 305 Group", cap: "", note: "" },
+  { part: "16--16(3DT527)", group: "B 305 Group", cap: "", note: "" },
+  { part: "TQ-17 ABG", group: "B 305 Group", cap: "", note: "" },
+
+  // TQ 17 Group (15 လုံး)
+  { part: "TQ-17 ABJ", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "TQ-18 ABJ", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "TQ-17 ADF", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-611(3100-1M)", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-614(BA)", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-421(E-600)", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-512(E-100)", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-609", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-608", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-318(E-100)", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "B-419", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "JZ-011", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "JZ-008", group: "TQ 17 Group", cap: "", note: "" },
+  { part: "4AP(16G)", group: "TQ 17 Group", cap: "16GB", note: "" },
+  { part: "32-16(3DTA28)", group: "TQ 17 Group", cap: "", note: "" },
+
+  // B 614 Group (21 လုံး)
+  { part: "B-80(2100)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-512(D 600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-420(x 100)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-421 (D 600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-320", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-321", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-318(D 600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "TQ-26(ABAD)", group: "B 614 Group", cap: "", note: "" },
+  { part: "TQ-27(ABAD)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-419(X600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-083", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-050", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-018", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-025", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-013", group: "B 614 Group", cap: "", note: "" },
+  { part: "JZ-023", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-614(x 100)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-614(x 600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-514(x 100)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-514(x 600)", group: "B 614 Group", cap: "", note: "" },
+  { part: "B-419(x 100)", group: "B 614 Group", cap: "", note: "" },
+
+  // B 515 Group (23 လုံး)
+  { part: "B-514 (P 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-515", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-517 (P 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-518 (H 700)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-622 (C 700)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-625 (C 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-614 (H 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-422 (H 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-425 (P 600)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-424", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-809(C 100)", group: "B 515 Group", cap: "", note: "" },
+  { part: "B-812(C 100)", group: "B 515 Group", cap: "", note: "" },
+  { part: "52AC/AD", group: "B 515 Group", cap: "", note: "" },
+  { part: "53AC/AE", group: "B 515 Group", cap: "", note: "" },
+  { part: "54AC/AE", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-049", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-109", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-053", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-090", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-128", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-185", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-186", group: "B 515 Group", cap: "", note: "" },
+  { part: "JZ-177", group: "B 515 Group", cap: "", note: "" },
+
+  // 705 (C) (12 လုံး)
+  { part: "HP 15 AC", group: "705 (C)", cap: "", note: "" },
+  { part: "HP 16 AC", group: "705 (C)", cap: "", note: "" },
+  { part: "B.620 (V 600)", group: "705 (C)", cap: "", note: "" },
+  { part: "B.621 (V 700)", group: "705 (C)", cap: "", note: "" },
+  { part: "B 809 (V 500)", group: "705 (C)", cap: "", note: "" },
+  { part: "4CR 128G", group: "705 (C)", cap: "128GB", note: "" },
+  { part: "B.424(L900)", group: "705 (C)", cap: "", note: "" },
+  { part: "JZ-103", group: "705 (C)", cap: "", note: "" },
+  { part: "JZ-100", group: "705 (C)", cap: "", note: "" },
+  { part: "JZ-266", group: "705 (C)", cap: "", note: "" },
+  { part: "JZ-150", group: "705 (C)", cap: "", note: "" },
+  { part: "JZ-187", group: "705 (C)", cap: "", note: "" }
+];
+
+const STORAGE_KEY = "kmb_ic_full_db_v9";
+const USER_KEY = "kmb_active_user_v7";
+const ACCOUNTS_KEY = "kmb_accounts_db_v7";
+const GROUP_PRICES_KEY = "kmb_group_prices_v9";
+const DELETED_GROUPS_KEY = "kmb_deleted_groups_v9";
+
+let icData = [];
+let groupPrices = {};
+let deletedGroups = [];
+let currentUser = null;
+let selectedGroup = "ALL";
+let isEditMode = false;
+
+// Forgot Password OTP State
+let generatedOtpCode = null;
+let forgotTargetUser = null;
+
+// 1-Device Lock ID
+let currentDeviceId = localStorage.getItem("kmb_unique_device_id");
+if (!currentDeviceId) {
+  currentDeviceId = "DEV_" + Math.random().toString(36).substring(2, 10).toUpperCase() + "_" + Date.now().toString(36);
+  localStorage.setItem("kmb_unique_device_id", currentDeviceId);
+}
+
+// Group Name Migration Helper (515 (B) - Part 3 -> 515(C))
+function fixGroupName(grp) {
+  if (grp === "515 (B) - Part 3" || grp === "515 B part 3") return "515(C)";
+  if (grp === "705 (C) - Part 2") return "515 B";
+  return grp;
+}
+
+// IC စာရင်းထဲမှ Group အသစ်များ + ပေါက်ဈေးစာရင်းထဲမှ Group အားလုံးကို အလိုအလျောက် ပေါင်းစပ်ပေးသော Function
+function getAllActiveGroups() {
+  const fromIcs = icData.map(item => item.group).filter(Boolean);
+  const fromPrices = Object.keys(groupPrices);
+  const combined = [...new Set([...DEFAULT_GROUPS, ...fromIcs, ...fromPrices])];
+  return combined.filter(g => !deletedGroups.includes(g));
+}
+
+// Drawer Controls
+function openDrawer() {
+  document.getElementById("sideDrawer").classList.add("active");
+  document.getElementById("drawerOverlay").classList.add("active");
+}
+function closeDrawer() {
+  document.getElementById("sideDrawer").classList.remove("active");
+  document.getElementById("drawerOverlay").classList.remove("active");
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toastBox");
+  t.innerText = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+function generateUniqueUserId(phone) {
+  const clean = phone.replace(/\D/g, "");
+  let hash = 5381;
+  for (let i = 0; i < clean.length; i++) {
+    hash = ((hash << 5) + hash) + clean.charCodeAt(i);
+  }
+  const sixDigits = (Math.abs(hash) % 900000 + 100000).toString();
+  return "KMB-" + sixDigits;
+}
+
+// FIREBASE REST API HELPERS
+async function cloudGet(path) {
+  const res = await fetch(`${SERVER_URL}/${path}.json`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Network error");
+  return await res.json();
+}
+
+async function cloudPut(path, data) {
+  const res = await fetch(`${SERVER_URL}/${path}.json`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  return await res.json();
+}
+
+// ================= AUTHENTICATION & FORGOT PASSWORD OTP =================
+async function initAuth() {
+  const savedUser = localStorage.getItem(USER_KEY);
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    if (!currentUser.userId) {
+      currentUser.userId = generateUniqueUserId(currentUser.phone);
+    }
+    document.getElementById("authScreen").classList.remove("active");
+    checkAdminUI();
+    updateUserHeaderBadge();
+    await verifyDeviceAndSyncAccount();
+  } else {
+    document.getElementById("authScreen").classList.add("active");
+  }
+}
+
+function switchAuthTab(tab) {
+  document.getElementById("authTabsBar").style.display = "grid";
+  document.getElementById("forgotForm").style.display = "none";
+  document.getElementById("tabLogin").classList.toggle("active", tab === "login");
+  document.getElementById("tabRegister").classList.toggle("active", tab === "register");
+  document.getElementById("loginForm").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("registerForm").style.display = tab === "register" ? "block" : "none";
+}
+
+function openForgotForm() {
+  document.getElementById("authTabsBar").style.display = "none";
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("registerForm").style.display = "none";
+  document.getElementById("forgotForm").style.display = "block";
+
+  document.getElementById("forgotStep1").style.display = "block";
+  document.getElementById("forgotStep2").style.display = "none";
+  document.getElementById("forgotStep3").style.display = "none";
+  document.getElementById("forgotPhone").value = document.getElementById("loginPhone").value.trim();
+}
+
+function closeForgotForm() {
+  document.getElementById("otpSmsBanner").classList.remove("show");
+  switchAuthTab("login");
+}
+
+async function sendForgotOtp() {
+  const phone = document.getElementById("forgotPhone").value.trim();
+  if (!phone) return alert("ကျေးဇူးပြု၍ အကောင့်ဖွင့်ထားသော ဖုန်းနံပါတ် ရိုက်ထည့်ပါ။");
+
+  const btn = document.getElementById("sendOtpBtn");
+  btn.innerText = "⏳ ဖုန်းနံပါတ် စစ်ဆေးနေသည်...";
+  btn.disabled = true;
+
+  try {
+    let userRecord = null;
+    try { userRecord = await cloudGet(`users/${phone}`); } catch (e) {}
+    const localAccs = getLocalAccounts();
+    if (!userRecord && localAccs[phone]) {
+      userRecord = localAccs[phone];
+    }
+
+    if (!userRecord) {
+      return alert("❌ ဤဖုန်းနံပါတ်ဖြင့် ဖွင့်ထားသော အကောင့် မရှိပါ။");
+    }
+
+    forgotTargetUser = userRecord;
+    generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    document.getElementById("forgotStep1").style.display = "none";
+    document.getElementById("forgotStep2").style.display = "block";
+
+    // Show Top SMS Notification Banner with the 6-digit OTP
+    document.getElementById("otpBannerCode").innerText = generatedOtpCode;
+    document.getElementById("otpSmsBanner").classList.add("show");
+    showToast(`📩 OTP Code (${generatedOtpCode}) ပို့ပေးလိုက်ပါပြီ`);
+  } finally {
+    btn.innerText = "📲 OTP Code ရယူမည်";
+    btn.disabled = false;
+  }
+}
+
+function fillOtpAuto() {
+  if (generatedOtpCode) {
+    document.getElementById("forgotOtpInput").value = generatedOtpCode;
+    document.getElementById("otpSmsBanner").classList.remove("show");
+  }
+}
+
+function verifyForgotOtp() {
+  const entered = document.getElementById("forgotOtpInput").value.trim();
+  if (!entered) return alert("OTP Code ရိုက်ထည့်ပေးပါ။");
+  if (entered !== generatedOtpCode) {
+    return alert("❌ OTP Code မှားယွင်းနေပါသည်။ ပြန်လည်စစ်ဆေးပါ။");
+  }
+
+  document.getElementById("otpSmsBanner").classList.remove("show");
+  document.getElementById("forgotStep2").style.display = "none";
+  document.getElementById("forgotStep3").style.display = "block";
+  showToast("✅ OTP မှန်ကန်ပါသည်။ စကားဝှက်အသစ် (၂) ခါ ရိုက်ထည့်ပါ။");
+}
+
+async function saveResetPassword() {
+  const pass1 = document.getElementById("forgotNewPass1").value.trim();
+  const pass2 = document.getElementById("forgotNewPass2").value.trim();
+
+  if (!pass1 || pass1.length < 4) {
+    return alert("စကားဝှက်အသစ်သည် အနည်းဆုံး (၄) လုံး ရှိရပါမည်။");
+  }
+  if (pass1 !== pass2) {
+    return alert("❌ စကားဝှက်နှစ်ခု တူညီမှု မရှိပါ။ တူညီအောင် ပြန်ရိုက်ပေးပါ။");
+  }
+
+  const btn = document.getElementById("saveNewPassBtn");
+  btn.innerText = "⏳ သိမ်းဆည်းနေသည်...";
+  btn.disabled = true;
+
+  try {
+    forgotTargetUser.pass = pass1;
+    saveLocalAccount(forgotTargetUser);
+    try {
+      await cloudPut(`users/${forgotTargetUser.phone}`, forgotTargetUser);
+    } catch (e) {}
+
+    showToast("🎉 စကားဝှက်အသစ် ပြောင်းလဲပြီးပါပြီ! ပြန်ဝင်နိုင်ပါပြီ။");
+    document.getElementById("loginPhone").value = forgotTargetUser.phone;
+    document.getElementById("loginPass").value = pass1;
+    closeForgotForm();
+  } finally {
+    btn.innerText = "💾 စကားဝှက်အသစ် သိမ်းဆည်းမည်";
+    btn.disabled = false;
+  }
+}
+
+function getLocalAccounts() {
+  return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
+}
+function saveLocalAccount(u) {
+  const a = getLocalAccounts();
+  a[u.phone] = u;
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a));
+}
+
+async function handleRegister() {
+  const name = document.getElementById("regName").value.trim();
+  const phone = document.getElementById("regPhone").value.trim();
+  const shop = document.getElementById("regShop").value.trim();
+  const pass = document.getElementById("regPass").value.trim();
+
+  if (!name || !phone || !pass) {
+    return alert("ကျေးဇူးပြု၍ အမည်၊ ဖုန်းနံပါတ် နှင့် စကားဝှက် အပြည့်အစုံ ဖြည့်ပေးပါ။");
+  }
+
+  const btn = document.getElementById("regBtn");
+  btn.innerText = "⏳ အကောင့်ဖွင့်နေပါသည်...";
+  btn.disabled = true;
+
+  try {
+    let existingUser = null;
+    try { existingUser = await cloudGet(`users/${phone}`); } catch (e) {}
+    const localAccs = getLocalAccounts();
+    if (existingUser || localAccs[phone]) {
+      alert("ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ဖွင့်ထားပြီးသား ဖြစ်ပါသည်။ Login ဝင်ပေးပါ။");
+      switchAuthTab("login");
+      return;
+    }
+
+    const userId = generateUniqueUserId(phone);
+    // အကောင့်သစ် စဖွင့်ပါက ၁ ရက် (24 Hours) VIP အခမဲ့ တန်းပေးပါသည်
+    const oneDayVipExpiry = Date.now() + (24 * 60 * 60 * 1000);
+
+    const newUser = {
+      userId,
+      name,
+      phone,
+      shop,
+      pass,
+      vipExpiry: oneDayVipExpiry,
+      isAdmin: (phone === "09885478869" && pass === "KMBADMIN99"),
+      activeDevice: currentDeviceId,
+      createdAt: Date.now()
+    };
+
+    try {
+      await cloudPut(`users/${phone}`, newUser);
+      await cloudPut(`userIds/${userId}`, { phone: phone });
+    } catch (e) {}
+
+    saveLocalAccount(newUser);
+    currentUser = newUser;
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+
+    document.getElementById("authScreen").classList.remove("active");
+    checkAdminUI();
+    updateUserHeaderBadge();
+    showToast(`🎉 အကောင့်သစ်အတွက် ၁ ရက်စာ (24 Hours) VIP အခမဲ့ ရရှိပါသည်!`);
+  } finally {
+    btn.innerText = "✨ အကောင့်သစ်ဖွင့်မည် (Sign Up)";
+    btn.disabled = false;
+  }
+}
+
+async function handleLogin() {
+  const phone = document.getElementById("loginPhone").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+
+  if (!phone || !pass) {
+    return alert("ဖုန်းနံပါတ် နှင့် စကားဝှက် ရိုက်ထည့်ပေးပါ။");
+  }
+
+  const btn = document.getElementById("loginBtn");
+  btn.innerText = "⏳ စစ်ဆေးနေပါသည်...";
+  btn.disabled = true;
+
+  try {
+    let userRecord = null;
+    try { userRecord = await cloudGet(`users/${phone}`); } catch (e) {}
+    const localAccs = getLocalAccounts();
+    if (!userRecord && localAccs[phone]) {
+      userRecord = localAccs[phone];
+    }
+
+    // Master Admin Login Check
+    if (phone === "09885478869" && pass === "KMBADMIN99") {
+      userRecord = {
+        userId: "KMB-ADMIN1",
+        name: "ကောင်းမြတ်ဗိုလ် (Admin)",
+        phone: "09885478869",
+        shop: "KMB Mobile",
+        pass: "KMBADMIN99",
+        vipExpiry: Date.now() + (3650 * 86400000),
+        isAdmin: true,
+        activeDevice: currentDeviceId
+      };
+    }
+
+    if (!userRecord) {
+      return alert("❌ ဤဖုန်းနံပါတ်ဖြင့် အကောင့်မရှိသေးပါ။ (သို့မဟုတ်) VPN ဖွင့်ပြီး ပြန်ဝင်ကြည့်ပါ။");
+    }
+
+    if (userRecord.pass !== pass) {
+      return alert("❌ စကားဝှက် (Password) မှားယွင်းနေပါသည်။ မေ့နေပါက 'Forgot password?' ကိုနှိပ်ပါ။");
+    }
+
+    if (!userRecord.userId) {
+      userRecord.userId = generateUniqueUserId(phone);
+    }
+
+    // 1-Device Lock
+    userRecord.activeDevice = currentDeviceId;
+
+    try {
+      await cloudPut(`users/${phone}`, userRecord);
+      await cloudPut(`userIds/${userRecord.userId}`, { phone: phone });
+    } catch (e) {}
+
+    saveLocalAccount(userRecord);
+    currentUser = userRecord;
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+
+    document.getElementById("authScreen").classList.remove("active");
+    checkAdminUI();
+    updateUserHeaderBadge();
+    showToast(`👋 မင်္ဂလာပါ ${currentUser.name}`);
+  } finally {
+    btn.innerText = "🚀 အကောင့်ဝင်မည် (Login)";
+    btn.disabled = false;
+  }
+}
+
+async function verifyDeviceAndSyncAccount() {
+  if (!currentUser) return;
+  let serverUser = null;
+  try { serverUser = await cloudGet(`users/${currentUser.phone}`); } catch (e) {}
+  if (!serverUser) {
+    const localAccs = getLocalAccounts();
+    serverUser = localAccs[currentUser.phone];
+  }
+
+  if (serverUser) {
+    if (serverUser.activeDevice && serverUser.activeDevice !== currentDeviceId) {
+      alert("⚠️ သင့်အကောင့်ကို တခြားဖုန်း (Device) တစ်လုံးတွင် ဝင်ရောက်သုံးစွဲလိုက်သောကြောင့် ဤဖုန်းမှ Logout ထွက်သွားပါပြီ။");
+      forceLogout();
+      return;
+    }
+    if (typeof serverUser.vipExpiry === "number") {
+      currentUser.vipExpiry = serverUser.vipExpiry;
+      localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+      saveLocalAccount(currentUser);
+    }
+  }
+  updateUserHeaderBadge();
+}
+
+async function refreshUserVipFromServer(showNotice = false) {
+  await verifyDeviceAndSyncAccount();
+  if (isUserVip()) {
+    if (showNotice) showToast("👑 သင့်အကောင့် VIP ပွင့်နေပါပြီ!");
+    if (document.getElementById("boardPriceModal").classList.contains("open")) {
+      openBoardPriceModal();
+    }
+    if (document.getElementById("accountModal").classList.contains("open")) {
+      openAccountModal();
+    }
+  } else if (showNotice) {
+    showToast("🔒 VIP သက်တမ်း ကုန်ဆုံးနေပါသည်။ Telegram (@ZoD1910) သို့ ဆက်သွယ်ပါ။");
+  }
+}
+
+setInterval(() => {
+  if (currentUser) verifyDeviceAndSyncAccount();
+}, 8000);
+
+function handleLogout() {
+  closeDrawer();
+  if (confirm("အကောင့်မှ ထွက်ရန် သေချာပါသလား? (VIP သက်တမ်းရှိပါက ပြန်ဝင်သည့်အခါ မပျက်ပါ)")) {
+    forceLogout();
+  }
+}
+
+function forceLogout() {
+  localStorage.removeItem(USER_KEY);
+  currentUser = null;
+  isEditMode = false;
+  checkAdminUI();
+  closeModal("accountModal");
+  closeModal("boardPriceModal");
+  document.getElementById("authScreen").classList.add("active");
+}
+
+function isUserVip() {
+  if (!currentUser) return false;
+  if (currentUser.isAdmin) return true;
+  return currentUser.vipExpiry && Date.now() < currentUser.vipExpiry;
+}
+
+function formatRemainingTime(expiryMs) {
+  const diff = expiryMs - Date.now();
+  if (diff <= 0) return "သက်တမ်းကုန်ဆုံး";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (days > 0) return `${days} ရက် ${hours} နာရီ ကျန်ရှိ`;
+  if (hours > 0) return `${hours} နာရီ ${mins} မိနစ် ကျန်ရှိ`;
+  return `${mins} မိနစ် ကျန်ရှိ`;
+}
+
+function updateUserHeaderBadge() {
+  const badge = document.getElementById("topStatusBadge");
+  const statusEl = document.getElementById("syncStatusText");
+  if (!currentUser) return;
+
+  statusEl.innerText = `🆔 ${currentUser.userId || ""}`;
+
+  if (currentUser.isAdmin) {
+    badge.className = "vip-badge-top";
+    badge.innerText = "👑 ADMIN";
+  } else if (isUserVip()) {
+    badge.className = "vip-badge-top";
+    badge.innerText = "👑 VIP";
+  } else {
+    badge.className = "free-badge-top";
+    badge.innerText = "FREE";
+  }
+}
+
+function checkAdminUI() {
+  const isAdmin = Boolean(currentUser && currentUser.isAdmin);
+  document.getElementById("topAdminBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("editModeBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("fabAddBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("adminEditSettingItem").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("adminImportBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("adminResetBox").style.display = isAdmin ? "block" : "none";
+
+  if (!isAdmin) {
+    isEditMode = false;
+    const chk = document.getElementById("editToggleCheck");
+    if (chk) chk.checked = false;
+  }
+  renderList();
+}
+
+function copyUserId() {
+  if (!currentUser) return;
+  const uid = currentUser.userId;
+  if (navigator.clipboard) navigator.clipboard.writeText(uid);
+  showToast(`📋 User ID (${uid}) ကို Copy ကူးပြီးပါပြီ`);
+}
+
+function contactTelegramForVip() {
+  closeDrawer();
+  if (currentUser && currentUser.userId && navigator.clipboard) {
+    navigator.clipboard.writeText(`VIP ဝင်လိုပါသည် - User ID: ${currentUser.userId} (ဖုန်း - ${currentUser.phone})`);
+  }
+  showToast("📋 User ID Copy ကူးပြီး Telegram ဖွင့်နေပါသည်...");
+  setTimeout(() => {
+    window.open(TELEGRAM_VIP_URL, "_blank");
+  }, 400);
+}
+
+function openAccountModal() {
+  if (!currentUser) return initAuth();
+  document.getElementById("accAvatar").innerText = (currentUser.name || "U")[0].toUpperCase();
+  document.getElementById("accName").innerText = currentUser.name + (currentUser.shop ? ` (${currentUser.shop})` : "");
+  document.getElementById("accPhone").innerText = "📱 " + currentUser.phone;
+  document.getElementById("accUserIdDisplay").innerText = currentUser.userId;
+
+  const planEl = document.getElementById("accPlanText");
+  if (currentUser.isAdmin) {
+    planEl.innerHTML = `<span style="color:var(--gold);">👑 KMB Master Admin</span>`;
+  } else if (isUserVip()) {
+    planEl.innerHTML = `<span style="color:var(--gold);">👑 VIP Member (${formatRemainingTime(currentUser.vipExpiry)})</span>`;
+  } else {
+    planEl.innerHTML = `<span style="color:var(--danger);">🔒 Free Member (စက်ပြားပေါက်ဈေး ပိတ်ထားသည်)</span>`;
+  }
+  openModal("accountModal");
+}
+
+// ================= ADMIN DYNAMIC GROUP PRICE MANAGEMENT =================
+function openAdminModal() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  renderAdminGroupPriceList();
+  openModal("adminModal");
+}
+
+function renderAdminGroupPriceList() {
+  const container = document.getElementById("adminGroupPriceContainer");
+  const allGroups = getAllActiveGroups();
+
+  container.innerHTML = allGroups.map(grp => {
+    const currentPrice = groupPrices[grp] || "";
+    const inputId = "admin_grp_" + btoa(unescape(encodeURIComponent(grp))).replace(/[^a-zA-Z0-9]/g, "");
+    const safeGrp = grp.replace(/'/g, "\\'");
+    return `
+      <div class="admin-group-row">
+        <div class="admin-group-top">
+          <span class="admin-group-name">📂 ${grp}</span>
+          <span style="font-size:0.72rem; color:var(--muted);">${currentPrice ? '✅ ဈေးရှိပြီး' : '⚠️ ဈေးမထည့်ရသေး'}</span>
+        </div>
+        <div class="admin-group-controls">
+          <input type="text" id="${inputId}" class="admin-price-input" value="${currentPrice}" placeholder="ပေါက်ဈေး (ဥပမာ 90000 Ks)">
+          <button class="admin-save-btn" onclick="saveSingleGroupPrice('${safeGrp}', '${inputId}')">💾 သိမ်း</button>
+          <button class="admin-del-btn" onclick="deleteGroupPriceItem('${safeGrp}')">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function adminAddNewGroupPrice() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const grp = document.getElementById("newGroupNameInput").value.trim();
+  const price = document.getElementById("newGroupPriceInput").value.trim();
+
+  if (!grp) return alert("ကျေးဇူးပြု၍ Group အမည် ရိုက်ထည့်ပေးပါ။");
+
+  deletedGroups = deletedGroups.filter(g => g !== grp);
+  localStorage.setItem(DELETED_GROUPS_KEY, JSON.stringify(deletedGroups));
+
+  groupPrices[grp] = price || "ပေါက်ဈေး မထည့်ရသေးပါ";
+  localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+
+  document.getElementById("newGroupNameInput").value = "";
+  document.getElementById("newGroupPriceInput").value = "";
+  renderAdminGroupPriceList();
+  renderGroups();
+
+  try {
+    await cloudPut("groupPrices", groupPrices);
+    await cloudPut("deletedGroups", deletedGroups);
+    showToast(`☁️ Group အသစ် "${grp}" ကို Server ပေါ် တင်ပြီးပါပြီ!`);
+  } catch (e) {
+    showToast("✅ ဖုန်းထဲသိမ်းပြီးပါပြီ");
+  }
+}
+
+async function saveSingleGroupPrice(grp, inputId) {
+  const val = document.getElementById(inputId).value.trim();
+  groupPrices[grp] = val;
+  localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+  renderAdminGroupPriceList();
+
+  try {
+    await cloudPut("groupPrices", groupPrices);
+    showToast(`✅ "${grp}" ပေါက်ဈေး (${val || 'အလွတ်'}) Server ပေါ် သိမ်းပြီးပါပြီ!`);
+  } catch (e) {
+    showToast(`⚠️ ဖုန်းထဲတွင် သိမ်းထားပါသည်`);
+  }
+}
+
+async function deleteGroupPriceItem(grp) {
+  if (!currentUser || !currentUser.isAdmin) return;
+  if (!confirm(`"${grp}" ပေါက်ဈေးကို စာရင်းမှ ဖျက်ပစ်ရန် သေချာပါသလား?`)) return;
+
+  delete groupPrices[grp];
+  if (!deletedGroups.includes(grp)) {
+    deletedGroups.push(grp);
+  }
+  localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+  localStorage.setItem(DELETED_GROUPS_KEY, JSON.stringify(deletedGroups));
+  renderAdminGroupPriceList();
+
+  try {
+    await cloudPut("groupPrices", groupPrices);
+    await cloudPut("deletedGroups", deletedGroups);
+    showToast(`🗑️ "${grp}" ပေါက်ဈေးကို ဖျက်ပြီးပါပြီ`);
+  } catch (e) {}
+}
+
+async function adminSetUserVip(days) {
+  const input = document.getElementById("adminTargetUserInput").value.trim().toUpperCase();
+  if (!input) return alert("User ID (ဥပမာ KMB-123456) သို့မဟုတ် ဖုန်းနံပါတ် ရိုက်ထည့်ပါ။");
+
+  let targetPhone = input;
+  if (input.startsWith("KMB-")) {
+    let foundPhone = null;
+    try {
+      const idMap = await cloudGet(`userIds/${input}`);
+      if (idMap && idMap.phone) foundPhone = idMap.phone;
+    } catch (e) {}
+    if (!foundPhone) {
+      const localAccs = getLocalAccounts();
+      for (const ph in localAccs) {
+        if (localAccs[ph].userId === input) {
+          foundPhone = ph;
+          break;
+        }
+      }
+    }
+    if (!foundPhone) return alert(`❌ User ID (${input}) ကို ရှာမတွေ့ပါ။ ဖုန်းနံပါတ်ဖြင့် စမ်းကြည့်ပါ။`);
+    targetPhone = foundPhone;
+  }
+
+  let userRecord = null;
+  try { userRecord = await cloudGet(`users/${targetPhone}`); } catch (e) {}
+  const localAccs = getLocalAccounts();
+  if (!userRecord && localAccs[targetPhone]) userRecord = localAccs[targetPhone];
+
+  if (!userRecord) {
+    userRecord = {
+      userId: generateUniqueUserId(targetPhone),
+      name: "VIP User",
+      phone: targetPhone,
+      shop: "",
+      pass: "1234",
+      vipExpiry: 0
+    };
+  }
+
+  const baseTime = (userRecord.vipExpiry && userRecord.vipExpiry > Date.now()) ? userRecord.vipExpiry : Date.now();
+  userRecord.vipExpiry = baseTime + (days * 24 * 60 * 60 * 1000);
+
+  saveLocalAccount(userRecord);
+  try {
+    await cloudPut(`users/${targetPhone}`, userRecord);
+    await cloudPut(`userIds/${userRecord.userId}`, { phone: targetPhone });
+  } catch (e) {}
+
+  if (currentUser && currentUser.phone === targetPhone) {
+    currentUser.vipExpiry = userRecord.vipExpiry;
+    localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+    updateUserHeaderBadge();
+  }
+
+  showToast(`👑 ${userRecord.userId} ကို (${days}) ရက် VIP ပေးပြီးပါပြီ!`);
+}
+
+// ================= BOARD PRICE & REAL-TIME SYNC =================
+function openBoardPriceModal() {
+  if (!currentUser) return initAuth();
+  updateUserHeaderBadge();
+  document.getElementById("lockModalUserId").innerText = currentUser.userId || "";
+
+  if (isUserVip()) {
+    document.getElementById("vipLockedSection").style.display = "none";
+    document.getElementById("boardPriceUnlockedSection").style.display = "block";
+    document.getElementById("priceModalVipTimer").innerText = currentUser.isAdmin
+      ? "👑 Admin Mode"
+      : `👑 VIP (${formatRemainingTime(currentUser.vipExpiry)})`;
+    renderBoardPriceList();
+  } else {
+    document.getElementById("vipLockedSection").style.display = "block";
+    document.getElementById("boardPriceUnlockedSection").style.display = "none";
+  }
+  openModal("boardPriceModal");
+}
+
+function renderBoardPriceList() {
+  const container = document.getElementById("boardPriceList");
+  const allGroups = getAllActiveGroups();
+
+  container.innerHTML = allGroups.map(grp => {
+    const price = groupPrices[grp] || "ပေါက်ဈေး မထည့်ရသေးပါ";
+    return `
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:800; font-size:0.9rem; color:#fff;">📂 ${grp} စက်ပြား</div>
+        <div style="font-weight:900; color:var(--gold); font-size:0.95rem;">${price}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function syncFromServer(showMessage = false) {
+  await verifyDeviceAndSyncAccount();
+  try {
+    const remoteDeleted = await cloudGet("deletedGroups");
+    if (Array.isArray(remoteDeleted)) {
+      deletedGroups = remoteDeleted;
+      localStorage.setItem(DELETED_GROUPS_KEY, JSON.stringify(deletedGroups));
+    }
+
+    const remotePrices = await cloudGet("groupPrices");
+    if (remotePrices && typeof remotePrices === "object") {
+      if (remotePrices["515 (B) - Part 3"] && !remotePrices["515(C)"]) {
+        remotePrices["515(C)"] = remotePrices["515 (B) - Part 3"];
+        delete remotePrices["515 (B) - Part 3"];
+      }
+      groupPrices = remotePrices;
+      localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+    }
+
+    const remoteIcs = await cloudGet("icData");
+    if (Array.isArray(remoteIcs) && remoteIcs.length > 0) {
+      icData = remoteIcs.map(item => ({
+        ...item,
+        group: fixGroupName(item.group)
+      }));
+      saveToStorage();
+    }
+
+    renderBoardPriceList();
+    if (showMessage) showToast("☁️ Server မှ နောက်ဆုံးပေါ် ဒေတာများ ရရှိပါပြီ!");
+  } catch (err) {
+    if (showMessage) showToast("⚠️ Server ချိတ်ဆက်မှု စစ်ဆေးပါ (VPN ဖွင့်ပါ)");
+  }
+}
+
+// ================= CORE IC SEARCH & DETAIL MODAL =================
+function normalizeStr(str) {
+  return (str || "").toUpperCase().replace(/O/g, "0").replace(/[\s\-\.\(\)\/]/g, "");
+}
+
+function loadData() {
+  const savedDel = localStorage.getItem(DELETED_GROUPS_KEY);
+  if (savedDel) deletedGroups = JSON.parse(savedDel);
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    icData = JSON.parse(saved).map(item => ({
+      ...item,
+      group: fixGroupName(item.group)
+    }));
+  } else {
+    icData = DEFAULT_ICS.map((item, idx) => ({ id: Date.now() + idx, ...item }));
+    saveToStorage();
+  }
+
+  const savedPrices = localStorage.getItem(GROUP_PRICES_KEY);
+  if (savedPrices) {
+    groupPrices = JSON.parse(savedPrices);
+    if (groupPrices["515 (B) - Part 3"] && !groupPrices["515(C)"]) {
+      groupPrices["515(C)"] = groupPrices["515 (B) - Part 3"];
+      delete groupPrices["515 (B) - Part 3"];
+    }
+  } else {
+    groupPrices = {
+      "515 (A)": "90,000 Ks",
+      "515 B": "90,000 Ks",
+      "515(C)": "90,000 Ks",
+      "Mi - 64GB": "18,000 Ks",
+      "Mi - 128GB": "25,000 Ks",
+      "Mi - 256GB": "38,000 Ks"
+    };
+  }
+}
+
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(icData));
+  renderGroups();
+  renderList();
+}
+
+function renderGroups() {
+  const groups = ["ALL", ...new Set([...icData.map(item => item.group).filter(Boolean), ...Object.keys(groupPrices)])];
+  const bar = document.getElementById("groupBar");
+  bar.innerHTML = groups.map(g => `
+    <div class="chip ${selectedGroup === g ? 'active' : ''}" onclick="selectGroup('${g.replace(/'/g, "\\'")}')">
+      ${g === "ALL" ? "အားလုံး (" + icData.length + ")" : g}
+    </div>
+  `).join("");
+
+  const dl = document.getElementById("groupSuggestions");
+  dl.innerHTML = groups.filter(g => g !== "ALL").map(g => `<option value="${g}">`).join("");
+}
+
+function selectGroup(group) {
+  selectedGroup = group;
+  renderGroups();
+  renderList();
+}
+
+function handleSearch() {
+  const val = document.getElementById("searchInput").value;
+  document.getElementById("clearBtn").style.display = val ? "block" : "none";
+  renderList();
+}
+
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("clearBtn").style.display = "none";
+  renderList();
+}
+
+function renderList() {
+  const rawQuery = document.getElementById("searchInput").value.trim();
+  const normQuery = normalizeStr(rawQuery);
+  const container = document.getElementById("icList");
+  const isAdmin = Boolean(currentUser && currentUser.isAdmin);
+
+  const filtered = icData.filter(item => {
+    const matchGroup = selectedGroup === "ALL" || item.group === selectedGroup;
+    if (!matchGroup) return false;
+    if (!normQuery) return true;
+
+    const normPart = normalizeStr(item.part);
+    const normGrp = normalizeStr(item.group);
+    const normNote = normalizeStr(item.note);
+    const normCap = normalizeStr(item.cap);
+
+    return normPart.includes(normQuery) || normGrp.includes(normQuery) || normNote.includes(normQuery) || normCap.includes(normQuery);
+  });
+
+  document.getElementById("resultCount").innerText = `တွေ့ရှိသော IC: ${filtered.length} လုံး`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state">ရှာဖွေသော IC နံပါတ် မတွေ့ပါ။</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => `
+    <div class="ic-card">
+      <div class="ic-info" onclick="showICDetail(${item.id})">
+        <div class="ic-part">${item.part}</div>
+        <div class="ic-meta">
+          <span class="badge badge-group">📂 ${item.group}</span>
+          ${item.cap ? `<span class="badge badge-cap">💾 ${item.cap}</span>` : ""}
+          ${item.note ? `<span class="badge badge-note">📌 ${item.note}</span>` : ""}
+        </div>
+      </div>
+      ${(isAdmin && isEditMode) ? `
+        <div class="card-actions">
+          <button class="btn-sm btn-edit" onclick="openEditModal(${item.id})">ပြင်ရန်</button>
+          <button class="btn-sm btn-del" onclick="deleteIC(${item.id})">ဖျက်ရန်</button>
+        </div>
+      ` : ""}
+    </div>
+  `).join("");
+}
+
+function showICDetail(id) {
+  const item = icData.find(i => i.id === id);
+  if (!item) return;
+
+  document.getElementById("detailPartName").innerText = item.part;
+  document.getElementById("detailGroup").innerText = item.group || "-";
+  document.getElementById("detailCap").innerText = item.cap || "မဖော်ပြထားပါ";
+
+  const priceEl = document.getElementById("detailGroupPrice");
+  if (isUserVip()) {
+    const grpPrice = groupPrices[item.group] || "ပေါက်ဈေး မထည့်ရသေးပါ (ဖုန်းဆက်မေးပါ)";
+    priceEl.innerHTML = `<span style="color:#fde047;">${grpPrice}</span>`;
+  } else {
+    priceEl.innerHTML = `<span style="color:var(--danger); font-size:0.82rem; cursor:pointer;" onclick="closeModal('compatModal'); openAccountModal();">🔒 စက်ပြားပေါက်ဈေးကြည့်ရန် VIP လိုအပ်ပါသည် (နှိပ်ပါ)</span>`;
+  }
+
+  const noteBox = document.getElementById("detailNoteBox");
+  if (item.note) {
+    noteBox.style.display = "block";
+    document.getElementById("detailNote").innerText = item.note;
+  } else {
+    noteBox.style.display = "none";
+  }
+
+  const sameGroup = icData.filter(i => i.group === item.group);
+  document.getElementById("compatTitle").innerText = `🔄 ${item.group} တူညီသော IC များ (${sameGroup.length} လုံး)`;
+  const body = document.getElementById("compatBody");
+  body.innerHTML = sameGroup.map(i => `
+    <div style="padding:10px 12px; border-radius:10px; background:${i.id === item.id ? 'rgba(56,189,248,0.22)' : 'var(--bg)'}; border:1px solid ${i.id === item.id ? 'var(--primary)' : 'var(--border)'}; display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-weight:800; font-size:0.95rem; color:${i.id === item.id ? '#fde047' : '#fff'};">${i.part}</span>
+      <span style="font-size:0.76rem; color:var(--muted);">${[i.cap, i.note].filter(Boolean).join(" • ")}</span>
+    </div>
+  `).join("");
+
+  openModal("compatModal");
+}
+
+function copyCurrentIcPart() {
+  const part = document.getElementById("detailPartName").innerText;
+  if (navigator.clipboard) navigator.clipboard.writeText(part);
+  showToast(`📋 "${part}" ကို Copy ကူးပြီးပါပြီ`);
+}
+
+function toggleEditMode() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  isEditMode = !isEditMode;
+  const btn = document.getElementById("editModeBtn");
+  const chk = document.getElementById("editToggleCheck");
+  btn.innerText = isEditMode ? "✏️ Edit ဖွင့်" : "✏️ Edit";
+  btn.classList.toggle("active", isEditMode);
+  if (chk) chk.checked = isEditMode;
+  renderList();
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+function openAddModal() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  document.getElementById("icModalTitle").innerText = "＋ IC အသစ်ထည့်ရန် (Admin Server)";
+  document.getElementById("editId").value = "";
+  document.getElementById("partInput").value = document.getElementById("searchInput").value.trim();
+  document.getElementById("groupInput").value = selectedGroup !== "ALL" ? selectedGroup : "";
+  document.getElementById("capInput").value = "64GB";
+  document.getElementById("noteInput").value = "";
+  openModal("icModal");
+}
+
+function openEditModal(id) {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const item = icData.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById("icModalTitle").innerText = "✏️ IC အချက်အလက် ပြင်ဆင်ရန် (Admin)";
+  document.getElementById("editId").value = item.id;
+  document.getElementById("partInput").value = item.part;
+  document.getElementById("groupInput").value = item.group;
+  document.getElementById("capInput").value = item.cap || "";
+  document.getElementById("noteInput").value = item.note || "";
+  openModal("icModal");
+}
+
+// Admin က IC အသစ်ထည့်ရာတွင် Group အသစ်ဖြစ်ပါက ပေါက်ဈေးစာရင်းထဲသို့ပါ အလိုအလျောက် ထည့်ပေးမည်
+async function saveIC() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const editId = document.getElementById("editId").value;
+  const part = document.getElementById("partInput").value.trim();
+  const group = fixGroupName(document.getElementById("groupInput").value.trim() || "General");
+  const cap = document.getElementById("capInput").value.trim();
+  const note = document.getElementById("noteInput").value.trim();
+
+  if (!part) return alert("ကျေးဇူးပြု၍ IC Part Number ရိုက်ထည့်ပေးပါ။");
+
+  if (editId) {
+    const idx = icData.findIndex(i => i.id == editId);
+    if (idx > -1) icData[idx] = { id: Number(editId), part, group, cap, note };
+  } else {
+    icData.unshift({ id: Date.now(), part, group, cap, note });
+  }
+
+  // အကယ်၍ Group အသစ်ဖြစ်နေပါက Admin ပေါက်ဈေးစာရင်းတွင် အလိုအလျောက် ပေါ်လာစေရန်
+  deletedGroups = deletedGroups.filter(g => g !== group);
+  localStorage.setItem(DELETED_GROUPS_KEY, JSON.stringify(deletedGroups));
+  if (!(group in groupPrices)) {
+    groupPrices[group] = "";
+    localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+  }
+
+  saveToStorage();
+  closeModal("icModal");
+
+  try {
+    await cloudPut("icData", icData);
+    await cloudPut("groupPrices", groupPrices);
+    await cloudPut("deletedGroups", deletedGroups);
+    showToast("☁️ IC နှင့် Group စာရင်း Server ပေါ်သို့ တင်ပြီးပါပြီ!");
+  } catch (e) {
+    showToast("✅ ဖုန်းထဲသိမ်းပြီးပါပြီ (Server ချိတ်ဆက်မှု စစ်ဆေးပါ)");
+  }
+}
+
+async function deleteIC(id) {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const item = icData.find(i => i.id === id);
+  if (!item) return;
+  if (confirm(`"${item.part}" ကို Server စာရင်းမှ ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
+    icData = icData.filter(i => i.id !== id);
+    saveToStorage();
+    try {
+      await cloudPut("icData", icData);
+      showToast("🗑️ Server ပေါ်မှ ဖျက်ပြီးပါပြီ");
+    } catch (e) {}
+  }
+}
+
+function exportData() {
+  const fullPackage = { updatedAt: new Date().toISOString(), groupPrices, icData };
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullPackage, null, 2));
+  const dlAnchor = document.createElement("a");
+  dlAnchor.setAttribute("href", dataStr);
+  dlAnchor.setAttribute("download", "kmb_ic_backup.json");
+  document.body.appendChild(dlAnchor);
+  dlAnchor.click();
+  dlAnchor.remove();
+}
+
+function importData(event) {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (Array.isArray(imported)) {
+        icData = imported.map(item => ({ ...item, group: fixGroupName(item.group) }));
+      } else if (imported && imported.icData) {
+        icData = imported.icData.map(item => ({ ...item, group: fixGroupName(item.group) }));
+        if (imported.groupPrices) {
+          groupPrices = imported.groupPrices;
+          localStorage.setItem(GROUP_PRICES_KEY, JSON.stringify(groupPrices));
+          try { await cloudPut("groupPrices", groupPrices); } catch (err) {}
+        }
+      }
+      saveToStorage();
+      try { await cloudPut("icData", icData); } catch (err) {}
+      showToast("☁️ Backup ဒေတာများ Server ပေါ် ပြန်သွင်းပြီးပါပြီ");
+      closeModal("settingsModal");
+    } catch (err) {
+      alert("ဖိုင်မှားယွင်းနေပါသည်။");
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function resetDefaultData() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  if (confirm("မူလ IC (၂၇၉) လုံး စာရင်းအတိုင်း ပြန်ထားပြီး Server ပေါ် တင်မည်။ သေချာပါသလား?")) {
+    localStorage.removeItem(STORAGE_KEY);
+    loadData();
+    renderGroups();
+    renderList();
+    try { await cloudPut("icData", icData); } catch (e) {}
+    closeModal("settingsModal");
+    showToast("🔄 မူလစာရင်းအတိုင်း ပြန်ထားပြီးပါပြီ");
+  }
+}
+
+function shareApp() {
+  closeDrawer();
+  if (navigator.share) {
+    navigator.share({
+      title: "KMB IC Checker Pro",
+      text: "မိုဘိုင်းဖုန်း IC နံပါတ်များနှင့် စက်ပြားပေါက်ဈေး စစ်ဆေးသည့်ဆော့ဖ်ဝဲ",
+      url: window.location.href
+    }).catch(() => {});
+  } else {
+    showToast("ဖုန်းပြင်ပညာရှင် သူငယ်ချင်းများဆီသို့ APK ပို့ပေးနိုင်ပါသည်");
+  }
+}
+
+// STARTUP INITIALIZATION
+loadData();
+renderGroups();
+renderList();
+initAuth();
+syncFromServer(false);
+</script>
+</body>
+</html>
